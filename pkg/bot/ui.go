@@ -12,11 +12,15 @@ type Config struct {
 	AdminChatId int64
 }
 
-var config Config
+var (
+	config Config
+	bot    *tgbotapi.BotAPI
+)
 
 func Run(cfg Config) {
 	config = cfg
-	bot, err := tgbotapi.NewBotAPI(cfg.Token)
+	var err error
+	bot, err = tgbotapi.NewBotAPI(cfg.Token)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -32,12 +36,12 @@ func Run(cfg Config) {
 
 	for update := range updates {
 		if update.Message != nil {
-			process1NewMessage(bot, update.Message)
+			process1NewMessage(update.Message)
 			continue
 		}
 
 		if update.CallbackQuery != nil {
-			process1Callback(bot, update.CallbackQuery)
+			process1Callback(update.CallbackQuery)
 			continue
 		}
 		j, _ := json.Marshal(update)
@@ -45,80 +49,65 @@ func Run(cfg Config) {
 	}
 }
 
-func process1NewMessage(bot *tgbotapi.BotAPI, m *tgbotapi.Message) {
+func process1NewMessage(m *tgbotapi.Message) {
 	lang := text.SelectLang(m.From.LanguageCode)
 	if len(m.Photo) != 0 {
-		process2Photo(bot, m, lang)
+		process2Photo(m, lang)
 		return
 	}
 	if m.Document != nil {
-		process2Document(bot, m, lang)
+		process2Document(m, lang)
 		return
 	}
 	if m.Text == "/start" {
-		process2StartMessage(bot, m, lang)
+		process2StartMessage(m, lang)
 		return
 	}
-	process2TextMessage(bot, m, lang)
+	process2TextMessage(m, lang)
 }
 
-func process1Callback(bot *tgbotapi.BotAPI, c *tgbotapi.CallbackQuery) {
+func process1Callback(c *tgbotapi.CallbackQuery) {
 	lang := text.SelectLang(c.From.LanguageCode)
 	if c.Data == "to support" {
-		process2ForwardToSupport(bot, c, lang)
+		process2ForwardToSupport(c, lang)
 	}
-	log.Println("From " + c.From.UserName + " received callback. Data: " + c.Data)
+	log.Println("From " + getUserLink(c.From) + " received callback. Data: " + c.Data)
 }
 
-func process2ForwardToSupport(bot *tgbotapi.BotAPI, c *tgbotapi.CallbackQuery, lang string) {
+func process2ForwardToSupport(c *tgbotapi.CallbackQuery, lang string) {
 	msg := tgbotapi.NewForward(config.AdminChatId, c.From.ID, c.Message.ReplyToMessage.MessageID)
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Println("failed to forward message to support:", err)
 	}
 	edit := tgbotapi.NewEditMessageText(c.From.ID, c.Message.MessageID, text.WasSentToSupport[lang])
-	_, err = bot.Send(edit)
-	if err != nil {
-		log.Println("failed to edit message:", err)
-	}
+	sendMessage(edit)
 }
 
-func process2TextMessage(bot *tgbotapi.BotAPI, m *tgbotapi.Message, lang string) {
+func process2TextMessage(m *tgbotapi.Message, lang string) {
 	msg := tgbotapi.NewMessage(m.Chat.ID, text.ReplyUserSentText[lang])
 	msg.ReplyToMessageID = m.MessageID
 	b := tgbotapi.NewInlineKeyboardButtonData(text.SendToSupport[lang], "to support")
 	markup := tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{b})
 	msg.ReplyMarkup = markup
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Println("failed to send message:", err)
-	}
+	sendMessage(msg)
 }
 
-func process2StartMessage(bot *tgbotapi.BotAPI, m *tgbotapi.Message, lang string) {
+func process2StartMessage(m *tgbotapi.Message, lang string) {
 	msg := tgbotapi.NewMessage(m.Chat.ID, text.ReplyStartMessage[lang])
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Println("failed to send message:", err)
-	}
+	sendMessage(msg)
 }
 
-func process2Photo(bot *tgbotapi.BotAPI, m *tgbotapi.Message, lang string) {
+func process2Photo(m *tgbotapi.Message, lang string) {
 	msg := tgbotapi.NewMessage(m.Chat.ID, "")
-	log.Println("From " + m.From.UserName + " received photo")
-	msg.Text = "From " + m.From.UserName + " received photo"
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Println("failed to send message:", err)
-	}
+	log.Println("From " + getUserLink(m.From) + " received photo")
+	msg.Text = "From " + getUserLink(m.From) + " received photo"
+	sendMessage(msg)
 }
 
-func process2Document(bot *tgbotapi.BotAPI, m *tgbotapi.Message, lang string) {
+func process2Document(m *tgbotapi.Message, lang string) {
 	msg := tgbotapi.NewMessage(m.Chat.ID, "")
-	log.Println("From " + m.From.UserName + " received document")
-	msg.Text = "From " + m.From.UserName + " received document"
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Println("failed to send message:", err)
-	}
+	log.Println("From " + getUserLink(m.From) + " received document")
+	msg.Text = "From " + getUserLink(m.From) + " received document"
+	sendMessage(msg)
 }
