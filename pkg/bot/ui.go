@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/lynxzp/print-bot/pkg/bot/text"
+	"github.com/lynxzp/print-bot/pkg/formats"
 	"log"
+	"strings"
 )
 
 type Config struct {
@@ -97,6 +99,43 @@ func process2Photo(m *tgbotapi.Message, lang string) {
 	log.Println("WW From " + getUserLink(m.From) + " received photo. Event unprocessed")
 }
 
+func process3PhotoAsDoc(m *tgbotapi.Message, lang string) {
+	log.Println("WW From " + getUserLink(m.From) + " received photo as doc. Event unprocessed")
+}
+
 func process2Document(m *tgbotapi.Message, lang string) {
+	mimes := strings.Split(m.Document.MimeType, "/")
+	var mime0, _ string
+	if len(mimes) == 2 {
+		mime0 = mimes[0]
+		_ = mimes[1]
+	}
+	if mime0 == "image" {
+		process3PhotoAsDoc(m, lang)
+		return
+	}
+
+	filenameext := strings.Split(m.Document.FileName, ".")
+	var ext string
+	if len(filenameext) > 1 {
+		ext = filenameext[len(filenameext)-1]
+	}
+	if formats.InConvertibleToPDF(ext) {
+		process3DirectToPDF(m, lang)
+		return
+	}
+
+	log.Println(m.Document.FileName, m.Document.MimeType)
 	log.Println("WW From " + getUserLink(m.From) + " received document. Event unprocessed")
+}
+
+func process3DirectToPDF(m *tgbotapi.Message, lang string) {
+	//cmd := exec.Command(`c:\Program Files\PDFCreator\PDFCreator-cli.exe`, "PrintFile", "/File=")
+	u, err := bot.GetFileDirectURL(m.Document.FileID)
+	if err != nil {
+		log.Println("WW can't get direct file url fileId=", m.Document.FileID, " from ", getUserLink(m.From))
+		return
+	}
+	j, _ := json.Marshal(u)
+	log.Println(string(j))
 }
