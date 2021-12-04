@@ -25,9 +25,7 @@ func Run(cfg Config) {
 		log.Panic(err)
 	}
 
-	//bot.Debug = true
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("Authorized on account @%s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -71,15 +69,12 @@ func process1Callback(c *tgbotapi.CallbackQuery) {
 	if c.Data == "to support" {
 		process2ForwardToSupport(c, lang)
 	}
-	log.Println("From " + getUserLink(c.From) + " received callback. Data: " + c.Data)
+	log.Println("WW From " + getUserLink(c.From) + " received unprocessed callback. Data: " + c.Data)
 }
 
 func process2ForwardToSupport(c *tgbotapi.CallbackQuery, lang string) {
 	msg := tgbotapi.NewForward(config.AdminChatId, c.From.ID, c.Message.ReplyToMessage.MessageID)
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Println("failed to forward message to support:", err)
-	}
+	sendMessage(msg)
 	edit := tgbotapi.NewEditMessageText(c.From.ID, c.Message.MessageID, text.WasSentToSupport[lang])
 	sendMessage(edit)
 }
@@ -99,15 +94,9 @@ func process2StartMessage(m *tgbotapi.Message, lang string) {
 }
 
 func process2Photo(m *tgbotapi.Message, lang string) {
-	msg := tgbotapi.NewMessage(m.Chat.ID, "")
-	log.Println("From " + getUserLink(m.From) + " received photo")
-	msg.Text = "From " + getUserLink(m.From) + " received photo"
-	sendMessage(msg)
+	log.Println("WW From " + getUserLink(m.From) + " received photo. Event unprocessed")
 }
 
 func process2Document(m *tgbotapi.Message, lang string) {
-	msg := tgbotapi.NewMessage(m.Chat.ID, "")
-	log.Println("From " + getUserLink(m.From) + " received document")
-	msg.Text = "From " + getUserLink(m.From) + " received document"
-	sendMessage(msg)
+	log.Println("WW From " + getUserLink(m.From) + " received document. Event unprocessed")
 }
