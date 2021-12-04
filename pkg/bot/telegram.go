@@ -37,7 +37,7 @@ func Run(cfg Config) {
 		}
 
 		if update.CallbackQuery != nil {
-			process1Callback(bot, &update /*update.CallbackQuery*/)
+			process1Callback(bot, update.CallbackQuery)
 			continue
 		}
 		j, _ := json.Marshal(update)
@@ -62,20 +62,24 @@ func process1NewMessage(bot *tgbotapi.BotAPI, m *tgbotapi.Message) {
 	process2TextMessage(bot, m, lang)
 }
 
-func process1Callback(bot *tgbotapi.BotAPI, u *tgbotapi.Update /*c *tgbotapi.CallbackQuery*/) {
-	//lang := text.SelectLang(c.From.LanguageCode)
-	c := u.CallbackQuery
+func process1Callback(bot *tgbotapi.BotAPI, c *tgbotapi.CallbackQuery) {
+	lang := text.SelectLang(c.From.LanguageCode)
 	if c.Data == "to support" {
-		process2ForwardToSupport(bot, u)
+		process2ForwardToSupport(bot, c, lang)
 	}
 	log.Println("From " + c.From.UserName + " received callback. Data: " + c.Data)
 }
 
-func process2ForwardToSupport(bot *tgbotapi.BotAPI, u *tgbotapi.Update) {
-	msg := tgbotapi.NewForward(config.AdminChatId, u.CallbackQuery.From.ID, u.CallbackQuery.Message.ReplyToMessage.MessageID)
+func process2ForwardToSupport(bot *tgbotapi.BotAPI, c *tgbotapi.CallbackQuery, lang string) {
+	msg := tgbotapi.NewForward(config.AdminChatId, c.From.ID, c.Message.ReplyToMessage.MessageID)
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println("failed to send message:", err)
+		log.Println("failed to forward message to support:", err)
+	}
+	edit := tgbotapi.NewEditMessageText(c.From.ID, c.Message.MessageID, text.WasSentToSupport[lang])
+	_, err = bot.Send(edit)
+	if err != nil {
+		log.Println("failed to edit message:", err)
 	}
 }
 

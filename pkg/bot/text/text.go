@@ -10,6 +10,9 @@ var (
 	SendToSupport = map[string]string{
 		"uk": "Відправити в службу підтримки",
 	}
+	WasSentToSupport = map[string]string{
+		"uk": "Відправлено вслужбу підтримки",
+	}
 )
 
 func SelectLang(lang string) string {
