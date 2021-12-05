@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/lynxzp/print-bot/pkg/bot/text"
-	"github.com/lynxzp/print-bot/pkg/formats"
+	"github.com/lynxzp/print-bot/pkg/osenv"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -115,12 +116,12 @@ func process2Document(m *tgbotapi.Message, lang string) {
 		return
 	}
 
-	filenameext := strings.Split(m.Document.FileName, ".")
+	filenameExt := strings.Split(m.Document.FileName, ".")
 	var ext string
-	if len(filenameext) > 1 {
-		ext = filenameext[len(filenameext)-1]
+	if len(filenameExt) > 1 {
+		ext = filenameExt[len(filenameExt)-1]
 	}
-	if formats.InConvertibleToPDF(ext) {
+	if osenv.InConvertibleToPDF(ext) {
 		process3DirectToPDF(m, lang)
 		return
 	}
@@ -130,12 +131,29 @@ func process2Document(m *tgbotapi.Message, lang string) {
 }
 
 func process3DirectToPDF(m *tgbotapi.Message, lang string) {
-	//cmd := exec.Command(`c:\Program Files\PDFCreator\PDFCreator-cli.exe`, "PrintFile", "/File=")
-	u, err := bot.GetFileDirectURL(m.Document.FileID)
+	msg := tgbotapi.NewMessage(m.Chat.ID, text.ReplyUserSentText[lang])
+	msg.ReplyToMessageID = m.MessageID
+	msg.ReplyMarkup = makeDocumentKeyboard("", lang)
+	sendMessage(msg)
+}
+
+func process4DirectToPDF(m *tgbotapi.Message, lang string) {
+
+	// download
+	url, err := bot.GetFileDirectURL(m.Document.FileID)
 	if err != nil {
 		log.Println("WW can't get direct file url fileId=", m.Document.FileID, " from ", getUserLink(m.From))
 		return
 	}
-	j, _ := json.Marshal(u)
-	log.Println(string(j))
+	path := osenv.GenFilePath(m.Document.FileUniqueID, "3", m.Document.FileName)
+	err = osenv.DownloadFile(path, url)
+	if err != nil {
+		log.Println("WW can't download file ", url)
+	}
+	//goland:noinspection GoUnhandledErrorResult`
+	defer os.Remove(path)
+	log.Println(path, err)
+
+	// convert
+	//cmd := exec.Command(`c:\Program Files\PDFCreator\PDFCreator-cli.exe`, "PrintFile", "/File=")
 }

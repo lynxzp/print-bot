@@ -3,15 +3,15 @@ package printbot
 import (
 	"encoding/json"
 	"github.com/lynxzp/print-bot/pkg/bot"
-	"github.com/lynxzp/print-bot/pkg/formats"
+	"github.com/lynxzp/print-bot/pkg/osenv"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
 type Config struct {
-	Bot     bot.Config
-	Formats formats.Config
+	Bot   bot.Config
+	OSenv osenv.Config
 }
 
 func readConfig(filename string) (cfg Config) {

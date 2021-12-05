@@ -2,7 +2,7 @@ package printbot
 
 import (
 	"github.com/lynxzp/print-bot/pkg/bot"
-	"github.com/lynxzp/print-bot/pkg/formats"
+	"github.com/lynxzp/print-bot/pkg/osenv"
 	"log"
 	"os"
 )
@@ -12,6 +12,6 @@ func Run() {
 		log.Fatalln("second command line argument should be filename of json config")
 	}
 	cfg := readConfig(os.Args[1])
-	formats.Available = cfg.Formats
+	osenv.Cfg = cfg.OSenv
 	bot.Run(cfg.Bot)
 }

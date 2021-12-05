@@ -13,6 +13,9 @@ var (
 	WasSentToSupport = map[string]string{
 		"uk": "Відправлено вслужбу підтримки",
 	}
+	Pages = map[string]string{
+		"uk": "Сторінки",
+	}
 )
 
 func SelectLang(lang string) string {
